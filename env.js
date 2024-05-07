@@ -1,14 +1,90 @@
-let socket = io();
+const cardList = [
+    {
+        title: "Flower1",
+        image: "flower1.webp",
+        link: "About flower 1",
+        description: "Demo description about flower 1"
+    },
+    {
+        title: "Flower2",
+        image: "flower2.webp",
+        link: "About flower 2",
+        description: "Demo description about flower 2"
+    }
+];
 
+const clickMe = () => {
+    alert("Thanks for clicking me. Hope you have a nice day!");
+};
+
+const submitForm = () => {
+    let formData = {};
+    formData.first_name = $('#first_name').val();
+    formData.last_name = $('#last_name').val();
+    formData.password = $('#password').val();
+    formData.email = $('#email').val();
+    console.log("Form Data Submitted: ", formData);
+    // Additional logic to process form data if needed
+
+    // Emit form data to the server via Socket.io
+    socket.emit('formData', formData);
+};
+
+const addCards = (items) => {
+    items.forEach(item => {
+        let itemToAppend = `<div class="col s4 center-align">
+            <div class="card medium">
+                <div class="card-image waves-effect waves-block waves-light">
+                    <img class="activator materialboxed materialboxed-image" src="${item.image}">
+                </div>
+                <div class="card-content">
+                    <span class="card-title activator grey-text text-darken-4">${item.title}<i class="material-icons right">more_vert</i></span>
+                    <p><a href="#">${item.link}</a></p>
+                </div>
+                <div class="card-reveal">
+                    <span class="card-title grey-text text-darken-4">${item.title}<i class="material-icons right">close</i></span>
+                    <p class="card-text">${item.description}</p>
+                </div>
+            </div>
+        </div>`;
+        $("#card-section").append(itemToAppend);
+    });
+    // Initialize Materialize materialboxed for newly added images
+    $('.materialboxed').materialbox();
+};
+
+// Initialize Socket.io connection
+const socket = io();
+
+// Socket.io event handling
 socket.on('connect', () => {
-    console.log('Connected to server');
+    console.log('Connected to Socket.io server');
 });
 
 socket.on('disconnect', () => {
-    console.log('Disconnected from server');
+    console.log('Disconnected from Socket.io server');
 });
 
-socket.on('number', (msg) => {
-    console.log('Random number received:', msg);
-    document.getElementById('output').innerText = 'Random number: ' + msg;
+socket.on('serverMessage', (message) => {
+    console.log('Message from server:', message);
+    // Example: Update UI with received message
+    $('#message-container').text(message);
+});
+
+// Add Socket.io event listeners and emit events
+$('#clickMeButton').click(() => {
+    socket.emit('clientMessage', 'Button clicked on client');
+});
+
+// Add Socket.io event listeners for card interactions
+$('.materialboxed').click(() => {
+    socket.emit('cardClicked', 'Card clicked on client');
+});
+
+$(document).ready(function () {
+    $('#formSubmit').click(() => {
+        submitForm();
+    });
+    addCards(cardList);
+    $('.modal').modal();
 });
