@@ -1,32 +1,59 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server); // Attach Socket.io to your HTTP server
 
-const PORT = process.env.PORT || 3000;
+const port = 3000;
 
-// Serve static files from the public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the 'public' directory
+app.use(express.static('public'));
 
+// Define a route to render the index.html file
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
+// Define a route to handle adding two numbers
+app.get('/addtwonumbers', (req, res) => {
+    // 1. Grab the values from URL parameters
+    const value1 = parseInt(req.query.num1);
+    const value2 = parseInt(req.query.num2);
+
+    // 2. Perform calculation
+    const result = value1 + value2;
+
+    // 3. Return the response as a JSON object
+    const response = { data: result, statusCode: 200, message: 'success' };
+    res.json(response);
+});
+
+// WebSocket connection with Socket.io
 io.on('connection', (socket) => {
     console.log('A user connected');
 
-    // Handle disconnect event
+    // Handle events from client
+    socket.on('clientMessage', (message) => {
+        console.log('Message from client:', message);
+        // Example: Send a message back to the client
+        io.emit('serverMessage', 'Message received on server');
+    });
+
+    // Handle disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
-
-    // Send random numbers to connected clients every second
-    setInterval(() => {
-        socket.emit('number', Math.floor(Math.random() * 10));
-    }, 1000);
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Start the server and handle errors
+server.listen(port, () => {
+    console.log(`Server started on port ${port}`);
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${port} is already in use`);
+    } else {
+        console.error('An error occurred while starting the server:', err);
+    }
 });
